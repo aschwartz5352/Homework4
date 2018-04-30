@@ -1,4 +1,6 @@
 import numpy as np
+import pygame
+from datetime import datetime
 
 
 class Cache(object):
@@ -112,9 +114,50 @@ def MiniBatchCD(data, epoch, batch_size, weight_scale, learning_rate):
         y = data[:, 5]
         result = FourNetwork(X, W1, W2, W3, W4, b1, b2, b3, b4, y, True, learning_rate)
         print(np.sum(np.equal(result, data[:, 5]))/len(result))
+    return W1, W2, W3, W4, b1, b2, b3, b4
 
 
 expert_policy = np.genfromtxt("expert_policy.txt", delimiter=" ")
 expert_policy[:, 0:5] = ((expert_policy - expert_policy.mean(axis=0))/expert_policy.std(axis=0))[:, 0:5]
-MiniBatchCD(expert_policy, 300, 250, 0.5, 0.1)
-print("done")
+W1, W2, W3, W4, b1, b2, b3, b4 = MiniBatchCD(expert_policy, 500, 250, 0.5, 0.1)
+
+# with open("our_policy" + datetime.now().strftime('%Y%m%d%H%M%S') + ".txt", 'w') as f:
+#     f.write('W1')
+#     f.write('\n')
+#     W1.tofile(f, sep=" ")
+#     f.write('\n')
+#     f.write('\n')
+#     f.write('b1')
+#     f.write('\n')
+#     b1.tofile(f, sep=" ")
+#     f.write('\n')
+#     f.write('\n')
+#     f.write('W2')
+#     f.write('\n')
+#     W2.tofile(f, sep=" ")
+#     f.write('\n')
+#     f.write('\n')
+#     f.write('b2')
+#     f.write('\n')
+#     b2.tofile(f, sep=" ")
+#     f.write('\n')
+#     f.write('\n')
+#     f.write('W3')
+#     f.write('\n')
+#     W3.tofile(f, sep=" ")
+#     f.write('\n')
+#     f.write('\n')
+#     f.write('b3')
+#     f.write('\n')
+#     b3.tofile(f, sep=" ")
+#     f.write('\n')
+#     f.write('\n')
+#     f.write('W4')
+#     f.write('\n')
+#     W4.tofile(f, sep=" ")
+#     f.write('\n')
+#     f.write('\n')
+#     f.write('b4')
+#     f.write('\n')
+#     b4.tofile(f, sep=" ")
+#     f.write('\n')
