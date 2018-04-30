@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import pygame
 
@@ -138,9 +139,17 @@ b3 = np.genfromtxt('our_policy20180429212152.txt', max_rows=1, skip_header=16, d
 W4 = np.genfromtxt('our_policy20180429212152.txt', max_rows=1, skip_header=19, delimiter=" ").reshape((256, 3))
 b4 = np.genfromtxt('our_policy20180429212152.txt', max_rows=1, skip_header=22, delimiter=" ")
 
-NUM_GAMES = 20
+NUM_GAMES = 200
+games = [x+1 for x in range(NUM_GAMES)]
+hits = []
 total_hits = 0
 for game in range(NUM_GAMES):
-    hits = rungame(W1, W2, W3, W4, b1, b2, b3, b4)
-    total_hits += hits
+    result = rungame(W1, W2, W3, W4, b1, b2, b3, b4)
+    hits.append(result)
+    total_hits += result
 print(total_hits/NUM_GAMES)
+plt.plot(games, hits)
+plt.title("Paddle Rebound Counts in " + str(200) + " Pong Games")
+plt.xlabel("Game #")
+plt.ylabel("Paddle Rebounds")
+#plt.savefig("deep_learning_games.png")
