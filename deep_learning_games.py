@@ -147,7 +147,7 @@ for game in range(NUM_GAMES):
     result = rungame(W1, W2, W3, W4, b1, b2, b3, b4)
     hits.append(result)
     total_hits += result
-print(total_hits/NUM_GAMES)
+print(total_hits/NUM_GAMES)  # 11.89 average hits per game.
 plt.plot(games, hits)
 plt.title("Paddle Rebound Counts in " + str(200) + " Pong Games")
 plt.xlabel("Game #")
