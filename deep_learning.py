@@ -1,5 +1,5 @@
+import matplotlib.pyplot as plt
 import numpy as np
-import pygame
 from datetime import datetime
 
 
@@ -8,6 +8,35 @@ class Cache(object):
         self.A = np.copy(A)
         self.W = np.copy(W)
         self.Z = np.copy(Z)
+
+
+# Prints confusion matrix and Misclassification Error
+def printConfusionMisclassification(data, policy):
+    W1 = np.genfromtxt(policy, max_rows=1, skip_header=1, delimiter=" ").reshape((5, 256))
+    b1 = np.genfromtxt(policy, max_rows=1, skip_header=4, delimiter=" ")
+    W2 = np.genfromtxt(policy, max_rows=1, skip_header=7, delimiter=" ").reshape((256, 256))
+    b2 = np.genfromtxt(policy, max_rows=1, skip_header=10, delimiter=" ")
+    W3 = np.genfromtxt(policy, max_rows=1, skip_header=13, delimiter=" ").reshape((256, 256))
+    b3 = np.genfromtxt(policy, max_rows=1, skip_header=16, delimiter=" ")
+    W4 = np.genfromtxt(policy, max_rows=1, skip_header=19, delimiter=" ").reshape((256, 3))
+    b4 = np.genfromtxt(policy, max_rows=1, skip_header=22, delimiter=" ")
+
+    classifications = FourNetwork(data[:,0:5], W1, W2, W3, W4, b1, b2, b3, b4, data[:,5], True, 0)
+    confusionMatrix = np.zeros((3, 3))
+    correct = 0
+    for i in range(len(classifications)):
+        if classifications[i] == data[i, 5]:
+            correct += 1
+        confusionMatrix[int(data[i, 5])][int(classifications[i])] += 1
+
+    for r in range(3):
+        num_labels = np.sum(confusionMatrix[r])
+        for c in range(3):
+            confusionMatrix[r][c] /= num_labels
+
+    print("Misclassification Error:", 1.0-(correct/10000))
+    print()
+    print(confusionMatrix)
 
 
 # Description: Computes affine transformation Z = AW + b.
@@ -102,18 +131,41 @@ def MiniBatchCD(data, epoch, batch_size, weight_scale, learning_rate):
     b3 = np.zeros((256,))
     W4 = (2*np.random.rand(256, 3) - 1)*weight_scale
     b4 = np.zeros((3,))
+    epochs = [e+1 for e in range(epoch)]
+    losses = []
+    accuracies = []
     for e in range(epoch):
         print("epoch", e+1)
         np.random.shuffle(data)
+        total_loss = 0
+        jfk = 0
         for i in range(data.shape[0]//batch_size):
             # X, y = batch of features and targets from data
             X = data[i*batch_size:(i+1)*batch_size, 0:5]
             y = data[i*batch_size:(i+1)*batch_size, 5]
-            loss = FourNetwork(X, W1, W2, W3, W4, b1, b2, b3, b4, y, False, learning_rate)
+            total_loss += FourNetwork(X, W1, W2, W3, W4, b1, b2, b3, b4, y, False, -1.983968e-04*e+0.1001983968)
+            jfk += 1
+        losses.append(total_loss/jfk)
+        print("average loss", total_loss/jfk)
         X = data[:, 0:5]
         y = data[:, 5]
         result = FourNetwork(X, W1, W2, W3, W4, b1, b2, b3, b4, y, True, learning_rate)
-        print(np.sum(np.equal(result, data[:, 5]))/len(result))
+        accuracy = np.sum(np.equal(result, data[:, 5]))/len(result)
+        print("accuracy", accuracy)
+        accuracies.append(accuracy)
+
+    plt.semilogy(epochs, losses)
+    plt.title("Loss vs. Training Epochs")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.savefig("loss_v_epochs_semilogy" + datetime.now().strftime('%Y%m%d%H%M%S') + ".png")
+    plt.close()
+    plt.figure()
+    plt.plot(epochs, accuracies)
+    plt.title("Accuracy vs. Training Epochs")
+    plt.ylabel("Epoch")
+    plt.xlabel("Accuracy")
+    plt.savefig("accuracy_v_epochs" + datetime.now().strftime('%Y%m%d%H%M%S') + ".png")
     return W1, W2, W3, W4, b1, b2, b3, b4
 
 
@@ -161,3 +213,11 @@ W1, W2, W3, W4, b1, b2, b3, b4 = MiniBatchCD(expert_policy, 500, 250, 0.5, 0.1)
 #     f.write('\n')
 #     b4.tofile(f, sep=" ")
 #     f.write('\n')
+
+# Misclassification Error: 0.010199999999999987
+#
+# [[ 0.98710258  0.00719856  0.00569886]
+#  [ 0.00554844  0.98804951  0.00640205]
+#  [ 0.00462642  0.00254453  0.99282905]]
+
+# printConfusionMisclassification(expert_policy, "our_policy20180430105221.txt")

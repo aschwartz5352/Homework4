@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from datetime import datetime
 import numpy as np
 import pygame
 
@@ -130,14 +131,14 @@ def rungame(W1, W2, W3, W4, b1, b2, b3, b4):
         fpsClock.tick(60)
 
 
-W1 = np.genfromtxt('our_policy20180429212152.txt', max_rows=1, skip_header=1, delimiter=" ").reshape((5, 256))
-b1 = np.genfromtxt('our_policy20180429212152.txt', max_rows=1, skip_header=4, delimiter=" ")
-W2 = np.genfromtxt('our_policy20180429212152.txt', max_rows=1, skip_header=7, delimiter=" ").reshape((256, 256))
-b2 = np.genfromtxt('our_policy20180429212152.txt', max_rows=1, skip_header=10, delimiter=" ")
-W3 = np.genfromtxt('our_policy20180429212152.txt', max_rows=1, skip_header=13, delimiter=" ").reshape((256, 256))
-b3 = np.genfromtxt('our_policy20180429212152.txt', max_rows=1, skip_header=16, delimiter=" ")
-W4 = np.genfromtxt('our_policy20180429212152.txt', max_rows=1, skip_header=19, delimiter=" ").reshape((256, 3))
-b4 = np.genfromtxt('our_policy20180429212152.txt', max_rows=1, skip_header=22, delimiter=" ")
+W1 = np.genfromtxt('our_policy20180430105221.txt', max_rows=1, skip_header=1, delimiter=" ").reshape((5, 256))
+b1 = np.genfromtxt('our_policy20180430105221.txt', max_rows=1, skip_header=4, delimiter=" ")
+W2 = np.genfromtxt('our_policy20180430105221.txt', max_rows=1, skip_header=7, delimiter=" ").reshape((256, 256))
+b2 = np.genfromtxt('our_policy20180430105221.txt', max_rows=1, skip_header=10, delimiter=" ")
+W3 = np.genfromtxt('our_policy20180430105221.txt', max_rows=1, skip_header=13, delimiter=" ").reshape((256, 256))
+b3 = np.genfromtxt('our_policy20180430105221.txt', max_rows=1, skip_header=16, delimiter=" ")
+W4 = np.genfromtxt('our_policy20180430105221.txt', max_rows=1, skip_header=19, delimiter=" ").reshape((256, 3))
+b4 = np.genfromtxt('our_policy20180430105221.txt', max_rows=1, skip_header=22, delimiter=" ")
 
 NUM_GAMES = 200
 games = [x+1 for x in range(NUM_GAMES)]
@@ -147,9 +148,9 @@ for game in range(NUM_GAMES):
     result = rungame(W1, W2, W3, W4, b1, b2, b3, b4)
     hits.append(result)
     total_hits += result
-print(total_hits/NUM_GAMES)  # 11.89 average hits per game.
+print(total_hits/NUM_GAMES)  # 13.415 average hits per game.
 plt.plot(games, hits)
 plt.title("Paddle Rebound Counts in " + str(200) + " Pong Games")
 plt.xlabel("Game #")
 plt.ylabel("Paddle Rebounds")
-#plt.savefig("deep_learning_games.png")
+plt.savefig("deep_learning_games" + datetime.now().strftime('%Y%m%d%H%M%S') + ".png")
