@@ -1,6 +1,12 @@
 import pygame
 import numpy as np
 
+numGames = 10
+epsilon = 0.1
+alpha = 0.2
+gamma = 0.8
+
+actionOptions = (0,0.04,-0.04)
 
 def getRandomXVelocity(vel_x):
     # xRandRange = (-0.015,0.015)
@@ -20,6 +26,39 @@ def getRandomYVelocity(vel_y):
         return 1
     else:
         return new_v
+
+optionsTable = {}
+def Q(state):
+    if state not in optionsTable:
+        optionsTable[state] = [0,0,0]
+    return optionsTable[state]
+
+def QSet(state, action, value):
+    optionsTable[state][action] = value
+
+def f(state):
+    actionVals = Q(state)
+
+    if np.random.rand() < epsilon:
+        r = np.random.randint(0,2)
+        # print(actionVals)
+        return actionVals[r], r
+    # print(actionVals, np.amax(actionVals), actionVals.index(np.amax(actionVals)))
+    return np.amax(actionVals), actionVals.index(np.amax(actionVals))
+
+def cleanState(state):
+    if state[0] > 1:
+        return (12,0,0,0,0)
+    x = int(np.floor(state[0]*12))
+    y = int(np.floor(state[1]*12))
+    vx = int(state[2]/abs(state[2]))
+    vy = 0
+    if abs(state[3]) > 0.15:
+        vy = int(state[3]/abs(state[3]))
+    pad = int(np.floor(12*state[4]/(1-0.2)))
+    return (x,y,vx,vy,pad)
+
+
 
 
 pygame.init()
@@ -44,34 +83,70 @@ RIGHT = (1, 0)
 screen.blit(surface, (0, 0))
 
 paddle_height = 0.2*SCREEN_HEIGHT
+
+def replay(history):
+    for state in history:
+        surface.fill((0, 0, 0))
+
+        # Draw Ball
+        pygame.draw.circle(surface, (255, 255, 255), (int(state[0] * SCREEN_WIDTH), int(state[1] * SCREEN_HEIGHT)), 5)
+
+        # Draw Paddle
+        r = pygame.Rect((SCREEN_WIDTH - 10, state[4] * SCREEN_HEIGHT), (10, paddle_height))
+        pygame.draw.rect(surface, (255, 255, 255), r)
+
+        screen.blit(surface, (0, 0))
+        pygame.display.flip()
+        pygame.display.update()
+        fpsClock.tick(60)
+
 state = (0.5, 0.5, 0.03, 0.01, 0.5 - 0.2 / 2)  # Change 0.01 to 0.005 for some fun :)
 print(state)
 
+play = False
 time = 0
+hits = 0
+maxHits = 0
+totalHits = 0
+# recorder = []
 while True:
-    time += 1
-    if time > 1000:
-        pygame.quit()
-        break
 
-    # Draw
-    surface.fill((0, 0, 0))
+    if time % 1000 == 0:
+        # Draw
+        surface.fill((0, 0, 0))
 
-    # Draw Ball
-    # r = pygame.Rect((state[0]*SCREEN_WIDTH, state[1]*SCREEN_HEIGHT), (10, 10))
-    # pygame.draw.rect(surface, (0,0,0), r)
-    pygame.draw.circle(surface, (255, 255, 255), (int(state[0]*SCREEN_WIDTH), int(state[1]*SCREEN_HEIGHT)), 5)
+        # Draw Ball
+        pygame.draw.circle(surface, (255, 255, 255), (int(state[0]*SCREEN_WIDTH), int(state[1]*SCREEN_HEIGHT)), 5)
 
-    # Draw Paddle
-    r = pygame.Rect((SCREEN_WIDTH-10, state[4]*SCREEN_HEIGHT), (10, paddle_height))
-    pygame.draw.rect(surface, (255, 255, 255), r)
+        # Draw Paddle
+        r = pygame.Rect((SCREEN_WIDTH-10, state[4]*SCREEN_HEIGHT), (10, paddle_height))
+        pygame.draw.rect(surface, (255, 255, 255), r)
+
+        screen.blit(surface, (0, 0))
+        pygame.display.flip()
+        pygame.display.update()
+        fpsClock.tick(60)
+
+    # recorder.append(state)
+    cState = cleanState(state)
+    # print(state, cState)
+    value, action = f(cState)
+
+    reward = 0
 
     # Get Game State
-    ball_x = state[0]
-    ball_y = state[1]
     vx = state[2]
     vy = state[3]
+    ball_x = state[0] + vx
+    ball_y = state[1] + vy
     pad = state[4]
+
+    pad += actionOptions[action]
+    if pad > 1-0.2:
+        pad = 1-0.2
+    elif pad < 0:
+        pad = 0
+
 
     # Position Checks
     # Hit Top Wall
@@ -93,17 +168,50 @@ while True:
             ball_x = 2 * 1 - ball_x
             vx = getRandomXVelocity(vx)
             vy = getRandomYVelocity(vy)
+
+            hits += 1
+            totalHits += 1
+            # print(time, hits)
+            play = True
+            # if hits > maxHits:
+            #     replay(recorder)
+            maxHits = max(hits, maxHits)
+            reward = hits
         # Hit Wall
         else:
             # THE FOLLOWING IS TEMPORARY. HITTING THE RIGHT WALL SHOULD BE A TERMINATION STATE
-            ball_x = 2 * 1 - ball_x
-            vx = -vx
+            # ball_x = 2 * 1 - ball_x
+            # vx = -vx
+            play = False
+            hits = 0
+            reward = -1
 
     # Velocity Calculations
-    state = (ball_x + vx, ball_y + vy, vx, vy, pad)
-    print(state)
 
-    screen.blit(surface, (0, 0))
-    pygame.display.flip()
-    pygame.display.update()
-    fpsClock.tick(60)
+    # if reward == -1:
+    #     print("hi")
+    state = (ball_x, ball_y, vx, vy, pad)
+    nextState = cleanState(state)
+    # print(state)
+    #
+    value2, action2 = f(nextState)
+    #
+    new_value = (1-alpha)*value + alpha * (reward + gamma * value2)
+    QSet(cState, action, new_value)
+
+    # # Missed
+    if reward == -1:
+        recorder = []
+        state = (0.5, 0.5, 0.03, 0.01, 0.5 - 0.2 / 2)
+        if time % 1000 == 0:
+            print(time, maxHits, totalHits/(time+1))
+        time += 1
+        if time > 100000:
+            pygame.quit()
+            break
+        #     return hits
+
+    #
+    # hits += reward
+
+
