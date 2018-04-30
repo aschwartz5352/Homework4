@@ -10,6 +10,51 @@ class Cache(object):
         self.Z = np.copy(Z)
 
 
+# Writes learned policy to file
+# format, "our_policy[datetime].txt"
+def store_policy(W1, W2, W3, W4, b1, b2, b3, b4):
+    with open("our_policy" + datetime.now().strftime('%Y%m%d%H%M%S') + ".txt", 'w') as f:
+        f.write('W1')
+        f.write('\n')
+        W1.tofile(f, sep=" ")
+        f.write('\n')
+        f.write('\n')
+        f.write('b1')
+        f.write('\n')
+        b1.tofile(f, sep=" ")
+        f.write('\n')
+        f.write('\n')
+        f.write('W2')
+        f.write('\n')
+        W2.tofile(f, sep=" ")
+        f.write('\n')
+        f.write('\n')
+        f.write('b2')
+        f.write('\n')
+        b2.tofile(f, sep=" ")
+        f.write('\n')
+        f.write('\n')
+        f.write('W3')
+        f.write('\n')
+        W3.tofile(f, sep=" ")
+        f.write('\n')
+        f.write('\n')
+        f.write('b3')
+        f.write('\n')
+        b3.tofile(f, sep=" ")
+        f.write('\n')
+        f.write('\n')
+        f.write('W4')
+        f.write('\n')
+        W4.tofile(f, sep=" ")
+        f.write('\n')
+        f.write('\n')
+        f.write('b4')
+        f.write('\n')
+        b4.tofile(f, sep=" ")
+        f.write('\n')
+
+
 # Prints confusion matrix and Misclassification Error
 def printConfusionMisclassification(data, policy):
     W1 = np.genfromtxt(policy, max_rows=1, skip_header=1, delimiter=" ").reshape((5, 256))
@@ -121,7 +166,7 @@ def FourNetwork(X, W1, W2, W3, W4, b1, b2, b3, b4, y, test, learning_rate):
     return loss
 
 
-def MiniBatchCD(data, epoch, batch_size, weight_scale, learning_rate):
+def MiniBatchCD(data, epoch, batch_size, weight_scale):
     # Init W1, W2, W3, W4, b1, b2, b3, b4
     W1 = (2*np.random.rand(5, 256) - 1)*weight_scale
     b1 = np.zeros((256,))
@@ -138,18 +183,18 @@ def MiniBatchCD(data, epoch, batch_size, weight_scale, learning_rate):
         print("epoch", e+1)
         np.random.shuffle(data)
         total_loss = 0
-        jfk = 0
+        batch_count = 0
         for i in range(data.shape[0]//batch_size):
             # X, y = batch of features and targets from data
             X = data[i*batch_size:(i+1)*batch_size, 0:5]
             y = data[i*batch_size:(i+1)*batch_size, 5]
             total_loss += FourNetwork(X, W1, W2, W3, W4, b1, b2, b3, b4, y, False, -1.983968e-04*e+0.1001983968)
-            jfk += 1
-        losses.append(total_loss/jfk)
-        print("average loss", total_loss/jfk)
+            batch_count += 1
+        losses.append(total_loss/batch_count)
+        print("average loss", total_loss/batch_count)
         X = data[:, 0:5]
         y = data[:, 5]
-        result = FourNetwork(X, W1, W2, W3, W4, b1, b2, b3, b4, y, True, learning_rate)
+        result = FourNetwork(X, W1, W2, W3, W4, b1, b2, b3, b4, y, True, 0.0)
         accuracy = np.sum(np.equal(result, data[:, 5]))/len(result)
         print("accuracy", accuracy)
         accuracies.append(accuracy)
@@ -171,53 +216,12 @@ def MiniBatchCD(data, epoch, batch_size, weight_scale, learning_rate):
 
 expert_policy = np.genfromtxt("expert_policy.txt", delimiter=" ")
 expert_policy[:, 0:5] = ((expert_policy - expert_policy.mean(axis=0))/expert_policy.std(axis=0))[:, 0:5]
-W1, W2, W3, W4, b1, b2, b3, b4 = MiniBatchCD(expert_policy, 500, 250, 0.5, 0.1)
+W1, W2, W3, W4, b1, b2, b3, b4 = MiniBatchCD(expert_policy, 500, 250, 0.5)
+store_policy(W1, W2, W3, W4, b1, b2, b3, b4)
 
-with open("our_policy" + datetime.now().strftime('%Y%m%d%H%M%S') + ".txt", 'w') as f:
-    f.write('W1')
-    f.write('\n')
-    W1.tofile(f, sep=" ")
-    f.write('\n')
-    f.write('\n')
-    f.write('b1')
-    f.write('\n')
-    b1.tofile(f, sep=" ")
-    f.write('\n')
-    f.write('\n')
-    f.write('W2')
-    f.write('\n')
-    W2.tofile(f, sep=" ")
-    f.write('\n')
-    f.write('\n')
-    f.write('b2')
-    f.write('\n')
-    b2.tofile(f, sep=" ")
-    f.write('\n')
-    f.write('\n')
-    f.write('W3')
-    f.write('\n')
-    W3.tofile(f, sep=" ")
-    f.write('\n')
-    f.write('\n')
-    f.write('b3')
-    f.write('\n')
-    b3.tofile(f, sep=" ")
-    f.write('\n')
-    f.write('\n')
-    f.write('W4')
-    f.write('\n')
-    W4.tofile(f, sep=" ")
-    f.write('\n')
-    f.write('\n')
-    f.write('b4')
-    f.write('\n')
-    b4.tofile(f, sep=" ")
-    f.write('\n')
-
+# printConfusionMisclassification(expert_policy, "our_policy20180430105221.txt")
 # Misclassification Error: 0.010199999999999987
 #
 # [[ 0.98710258  0.00719856  0.00569886]
 #  [ 0.00554844  0.98804951  0.00640205]
 #  [ 0.00462642  0.00254453  0.99282905]]
-
-# printConfusionMisclassification(expert_policy, "our_policy20180430105221.txt")
