@@ -10,12 +10,15 @@
 /venv
 /.idea
 
+
 # IDEs and editors
 /.idea
+
 
 # Compiled Python Code
 /__pycache__
 /.pyc
+*.pkl
 
 # Compressed Files
 /.zip
